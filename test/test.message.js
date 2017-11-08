@@ -230,9 +230,8 @@ describe( 'Message Test', function() {
     } );
 
 
-    describe( 'Publish Template Message', function() {
-        it( 'Send template message: should return OK', function( done ) {
-
+    describe( 'Publish Private Template Message', function() {
+        it( 'Send public template message: should return OK', function( done ) {
             var content = JSON.stringify( { content : "aa{c}{e}{d}", extra : "bb" } );
             var values  = [ { "{c}":"1","{d}":"2","{e}":"3"} ];
 
@@ -272,14 +271,53 @@ describe( 'Message Test', function() {
             }, function() {
                 done();
             } );
+        } );
 
+        it( 'Send system template message: should return OK', function( done ) {
+            var content = JSON.stringify( { content : "aa{c}{e}{d}", extra : "bb" } );
+            var values  = [ { "{c}":"1","{d}":"2","{e}":"3"} ];
 
+            /*
+             rongSDK.message.private.publish_template( testConfig.message.fromUserId, [testConfig.message.toUserId], 'RC:TxtMsg', content, values, [ 'push content for user' ], ['push data for user'], function( err, resultText ) {
+             return done();
+             should.not.exists( err );
+             var result = JSON.parse( resultText );
+             result.code.should.equal( 200 );
+             done();
+             } );
+             */
 
+            var args = [testConfig.message.fromUserId, [testConfig.message.toUserId], 'RC:TxtMsg', content, values, [ 'push content for user' ], ['push data for user'], 0, 0 ];
+
+            var argsArray = [];
+            argsArray.push( args.concat() );
+            argsArray.push( args.concat( 'json' ) );
+            argsArray.push( args.concat( 'xml' ) );
+
+            async.each( argsArray, function( _args, cb ) {
+                rongSDK.message.system.publish_template.apply( this, _args.concat( function( err, resultText ) {
+                    if( _args[ _args.length - 1 ] === 'xml' ) {
+                        should.not.exists( err );
+                        parseString( resultText, function( err, result ) {
+                            parseInt( result.xml.code[0] ).should.equal( 200 );
+                            cb();
+                        } );
+                    }
+                    else {
+                        should.not.exists( err );
+                        var result = JSON.parse( resultText );
+                        result.code.should.equal( 200 );
+                        cb();
+                    }
+                } ) );
+            }, function() {
+                done();
+            } );
         } );
 
         it( 'Send system message: should return OK', function( done ) {
 
-            var args = [testConfig.message.fromUserId, [testConfig.message.toUserId], 'RC:TxtMsg', JSON.stringify( { content : 'Hello, world!' } )];
+            var args = [testConfig.message.fromUserId, [testConfig.message.toUserId], 'RC:TxtMsg', JSON.stringify( { content : 'Hello, world!' } ), '', '', 0, 0];
 
             var argsArray = [];
             for( var i=0; i<3; ++i ) {
